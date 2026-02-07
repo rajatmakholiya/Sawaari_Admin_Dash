@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -11,9 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import DocumentViewer from '@/components/DocumentViewer';
 import { Users, Plus, Search, Filter, Phone, Mail, MapPin, Calendar, TriangleAlert as AlertTriangle, CircleCheck as CheckCircle, Clock, FileText, CreditCard as Edit, Trash2, Car, Upload } from 'lucide-react';
-import { getDrivers, addDriver, updateDriver, deleteDriver, type Driver } from '@/lib/localStorage';
+import { getDrivers, addDriver, updateDriver, deleteDriver, saveDrivers, type Driver } from '@/lib/localStorage';
 import { dummyDrivers } from '@/lib/dummyData';
-import { saveDrivers } from '@/lib/localStorage';
 
 export default function DriversPage() {
   const [drivers, setDrivers] = useState<Driver[]>([]);
@@ -24,24 +23,24 @@ export default function DriversPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    email: '',
-    license: '',
-    cluster: '',
-    vehicle: '',
-    address: '',
-    documents: {
-      license: { status: 'pending', expiry: '', image: '' },
-      aadhaar: { status: 'pending', expiry: '', image: '' },
-      pan: { status: 'pending', expiry: '', image: '' },
-      medical: { status: 'pending', expiry: '', image: '' }
-    }
-  });
+  
+  const [formData, setFormData] = useState<Omit<Driver, 'id' | 'status' | 'joinDate' | 'totalRides' | 'rating'>>({
+  name: '',
+  phone: '',
+  email: '',
+  license: '',
+  cluster: '',
+  vehicle: '',
+  address: '',
+  documents: {
+    license: { status: 'pending', expiry: '', image: undefined },
+    aadhaar: { status: 'pending', expiry: null, image: undefined },
+    pan: { status: 'pending', expiry: null, image: undefined },
+    medical: { status: 'pending', expiry: '', image: undefined }
+  }
+});
 
   useEffect(() => {
-    // Initialize with dummy data if no drivers exist
     const existingDrivers = getDrivers();
     if (existingDrivers.length === 0) {
       saveDrivers(dummyDrivers);
@@ -61,16 +60,16 @@ export default function DriversPage() {
       vehicle: '',
       address: '',
       documents: {
-        license: { status: 'pending', expiry: '', image: '' },
-        aadhaar: { status: 'pending', expiry: '', image: '' },
-        pan: { status: 'pending', expiry: '', image: '' },
-        medical: { status: 'pending', expiry: '', image: '' }
+        license: { status: 'pending', expiry: '', image: undefined },
+        aadhaar: { status: 'pending', expiry: null, image: undefined },
+        pan: { status: 'pending', expiry: null, image: undefined },
+        medical: { status: 'pending', expiry: '', image: undefined }
       }
     });
   };
 
   const handleAddDriver = () => {
-    const newDriver = addDriver({
+    addDriver({
       ...formData,
       status: 'active' as const,
       joinDate: new Date().toISOString().split('T')[0],
@@ -164,13 +163,11 @@ export default function DriversPage() {
                          driver.phone.includes(searchTerm);
     const matchesStatus = statusFilter === 'all' || driver.status === statusFilter;
     const matchesCluster = clusterFilter === 'all' || driver.cluster.toLowerCase() === clusterFilter;
-    
     return matchesSearch && matchesStatus && matchesCluster;
   });
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center space-y-4 lg:space-y-0">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Drivers Management</h1>
@@ -191,62 +188,35 @@ export default function DriversPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
-                <Input 
-                  id="name" 
-                  placeholder="Enter driver's name"
-                  value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                />
+                <Input id="name" value={formData.name} onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number</Label>
-                <Input 
-                  id="phone" 
-                  placeholder="+91 98765 43210"
-                  value={formData.phone}
-                  onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                />
+                <Input id="phone" value={formData.phone} onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input 
-                  id="email" 
-                  type="email" 
-                  placeholder="driver@example.com"
-                  value={formData.email}
-                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                />
+                <Input id="email" type="email" value={formData.email} onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="license">License Number</Label>
-                <Input 
-                  id="license" 
-                  placeholder="HR-0123456789"
-                  value={formData.license}
-                  onChange={(e) => setFormData(prev => ({ ...prev, license: e.target.value }))}
-                />
+                <Input id="license" value={formData.license} onChange={(e) => setFormData(prev => ({ ...prev, license: e.target.value }))} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="cluster">Assigned Cluster</Label>
                 <Select value={formData.cluster} onValueChange={(value) => setFormData(prev => ({ ...prev, cluster: value }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select cluster" />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Select cluster" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="north">North</SelectItem>
-                    <SelectItem value="central">Central</SelectItem>
-                    <SelectItem value="south">South</SelectItem>
-                    <SelectItem value="east">East</SelectItem>
-                    <SelectItem value="west">West</SelectItem>
+                    {['north', 'central', 'south', 'east', 'west'].map(c => (
+                      <SelectItem key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="vehicle">Assign Vehicle</Label>
                 <Select value={formData.vehicle} onValueChange={(value) => setFormData(prev => ({ ...prev, vehicle: value }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select vehicle" />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Select vehicle" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="hr-26-ab-1234">HR-26-AB-1234</SelectItem>
                     <SelectItem value="hr-26-cd-5678">HR-26-CD-5678</SelectItem>
@@ -256,15 +226,9 @@ export default function DriversPage() {
               </div>
               <div className="md:col-span-2 space-y-2">
                 <Label htmlFor="address">Address</Label>
-                <Textarea 
-                  id="address" 
-                  placeholder="Enter driver's address"
-                  value={formData.address}
-                  onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                />
+                <Textarea id="address" value={formData.address} onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))} />
               </div>
               
-              {/* Document Upload Section */}
               <div className="md:col-span-2 space-y-4">
                 <h3 className="text-lg font-semibold">Document Upload</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -272,41 +236,20 @@ export default function DriversPage() {
                     <div key={docType} className="space-y-2">
                       <Label className="capitalize">{docType}</Label>
                       <div className="flex items-center space-x-2">
-                        <Input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => handleFileUpload(docType, e)}
-                          className="hidden"
-                          id={`file-${docType}`}
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => document.getElementById(`file-${docType}`)?.click()}
-                        >
-                          <Upload className="w-4 h-4 mr-2" />
-                          Upload
+                        <Input type="file" accept="image/*" onChange={(e) => handleFileUpload(docType, e)} className="hidden" id={`file-${docType}`} />
+                        <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById(`file-${docType}`)?.click()}>
+                          <Upload className="w-4 h-4 mr-2" /> Upload
                         </Button>
-                        {docInfo.image && (
-                          <Badge className="bg-green-100 text-green-800">
-                            Uploaded
-                          </Badge>
-                        )}
+                        {docInfo.image && <Badge className="bg-green-100 text-green-800">Uploaded</Badge>}
                       </div>
                       {docType !== 'aadhaar' && docType !== 'pan' && (
-                        <Input
-                          type="date"
-                          placeholder="Expiry Date"
-                          value={docInfo.expiry}
-                          onChange={(e) => setFormData(prev => ({
-                            ...prev,
-                            documents: {
-                              ...prev.documents,
-                              [docType]: { ...prev.documents[docType as keyof typeof prev.documents], expiry: e.target.value }
-                            }
-                          }))}
-                        />
+                        <Input type="date" value={docInfo.expiry || ''} onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          documents: {
+                            ...prev.documents,
+                            [docType]: { ...prev.documents[docType as keyof typeof prev.documents], expiry: e.target.value }
+                          }
+                        }))} />
                       )}
                     </div>
                   ))}
@@ -314,16 +257,12 @@ export default function DriversPage() {
               </div>
             </div>
             <div className="flex justify-end space-x-2 mt-6">
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleAddDriver}>
-                Add Driver
-              </Button>
+              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
+              <Button onClick={handleAddDriver}>Add Driver</Button>
             </div>
           </DialogContent>
         </Dialog>
-        
+
         {/* Edit Driver Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent className="max-w-2xl">
@@ -333,62 +272,35 @@ export default function DriversPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-name">Full Name</Label>
-                <Input 
-                  id="edit-name" 
-                  placeholder="Enter driver's name"
-                  value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                />
+                <Input id="edit-name" value={formData.name} onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-phone">Phone Number</Label>
-                <Input 
-                  id="edit-phone" 
-                  placeholder="+91 98765 43210"
-                  value={formData.phone}
-                  onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                />
+                <Input id="edit-phone" value={formData.phone} onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-email">Email</Label>
-                <Input 
-                  id="edit-email" 
-                  type="email" 
-                  placeholder="driver@example.com"
-                  value={formData.email}
-                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                />
+                <Input id="edit-email" type="email" value={formData.email} onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-license">License Number</Label>
-                <Input 
-                  id="edit-license" 
-                  placeholder="HR-0123456789"
-                  value={formData.license}
-                  onChange={(e) => setFormData(prev => ({ ...prev, license: e.target.value }))}
-                />
+                <Input id="edit-license" value={formData.license} onChange={(e) => setFormData(prev => ({ ...prev, license: e.target.value }))} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-cluster">Assigned Cluster</Label>
                 <Select value={formData.cluster} onValueChange={(value) => setFormData(prev => ({ ...prev, cluster: value }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select cluster" />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="North">North</SelectItem>
-                    <SelectItem value="Central">Central</SelectItem>
-                    <SelectItem value="South">South</SelectItem>
-                    <SelectItem value="East">East</SelectItem>
-                    <SelectItem value="West">West</SelectItem>
+                    {['North', 'Central', 'South', 'East', 'West'].map(c => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-vehicle">Assign Vehicle</Label>
                 <Select value={formData.vehicle} onValueChange={(value) => setFormData(prev => ({ ...prev, vehicle: value }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select vehicle" />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="HR-26-AB-1234">HR-26-AB-1234</SelectItem>
                     <SelectItem value="HR-26-CD-5678">HR-26-CD-5678</SelectItem>
@@ -398,43 +310,24 @@ export default function DriversPage() {
               </div>
               <div className="md:col-span-2 space-y-2">
                 <Label htmlFor="edit-address">Address</Label>
-                <Textarea 
-                  id="edit-address" 
-                  placeholder="Enter driver's address"
-                  value={formData.address}
-                  onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                />
+                <Textarea id="edit-address" value={formData.address} onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))} />
               </div>
             </div>
             <div className="flex justify-end space-x-2 mt-6">
-              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleEditDriver}>
-                Update Driver
-              </Button>
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
+              <Button onClick={handleEditDriver}>Update Driver</Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-col lg:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Search drivers by name or phone..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+          <Input placeholder="Search drivers by name or phone..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
         </div>
-        
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full lg:w-40">
-            <Filter className="w-4 h-4 mr-2" />
-            <SelectValue />
-          </SelectTrigger>
+          <SelectTrigger className="w-full lg:w-40"><Filter className="w-4 h-4 mr-2" /><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="active">Active</SelectItem>
@@ -442,79 +335,36 @@ export default function DriversPage() {
             <SelectItem value="suspended">Suspended</SelectItem>
           </SelectContent>
         </Select>
-        
         <Select value={clusterFilter} onValueChange={setClusterFilter}>
-          <SelectTrigger className="w-full lg:w-40">
-            <Filter className="w-4 h-4 mr-2" />
-            <SelectValue />
-          </SelectTrigger>
+          <SelectTrigger className="w-full lg:w-40"><Filter className="w-4 h-4 mr-2" /><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Clusters</SelectItem>
-            <SelectItem value="north">North</SelectItem>
-            <SelectItem value="central">Central</SelectItem>
-            <SelectItem value="south">South</SelectItem>
-            <SelectItem value="east">East</SelectItem>
-            <SelectItem value="west">West</SelectItem>
+            {['north', 'central', 'south', 'east', 'west'].map(c => (
+              <SelectItem key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="border-0 shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Drivers</p>
-                <p className="text-2xl font-bold text-gray-900">{drivers.length}</p>
-              </div>
-              <Users className="w-6 h-6 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-0 shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Active</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {drivers.filter(d => d.status === 'active').length}
-                </p>
-              </div>
-              <CheckCircle className="w-6 h-6 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-0 shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Unassigned</p>
-                <p className="text-2xl font-bold text-orange-600">
-                  {drivers.filter(d => d.vehicle === 'Unassigned').length}
-                </p>
-              </div>
-              <AlertTriangle className="w-6 h-6 text-orange-600" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-0 shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Document Alerts</p>
-                <p className="text-2xl font-bold text-red-600">2</p>
-              </div>
-              <FileText className="w-6 h-6 text-red-600" />
-            </div>
-          </CardContent>
-        </Card>
+        <Card className="border-0 shadow-sm"><CardContent className="p-4 flex items-center justify-between">
+          <div><p className="text-sm text-gray-600">Total Drivers</p><p className="text-2xl font-bold">{drivers.length}</p></div>
+          <Users className="w-6 h-6 text-blue-600" />
+        </CardContent></Card>
+        <Card className="border-0 shadow-sm"><CardContent className="p-4 flex items-center justify-between">
+          <div><p className="text-sm text-gray-600">Active</p><p className="text-2xl font-bold text-green-600">{drivers.filter(d => d.status === 'active').length}</p></div>
+          <CheckCircle className="w-6 h-6 text-green-600" />
+        </CardContent></Card>
+        <Card className="border-0 shadow-sm"><CardContent className="p-4 flex items-center justify-between">
+          <div><p className="text-sm text-gray-600">Unassigned</p><p className="text-2xl font-bold text-orange-600">{drivers.filter(d => d.vehicle === 'Unassigned').length}</p></div>
+          <AlertTriangle className="w-6 h-6 text-orange-600" />
+        </CardContent></Card>
+        <Card className="border-0 shadow-sm"><CardContent className="p-4 flex items-center justify-between">
+          <div><p className="text-sm text-gray-600">Document Alerts</p><p className="text-2xl font-bold text-red-600">2</p></div>
+          <FileText className="w-6 h-6 text-red-600" />
+        </CardContent></Card>
       </div>
 
-      {/* Drivers List */}
       <div className="space-y-4">
         {filteredDrivers.map((driver) => (
           <Card key={driver.id} className="border-0 shadow-sm hover:shadow-md transition-shadow">
@@ -522,77 +372,35 @@ export default function DriversPage() {
               <div className="flex flex-col lg:flex-row justify-between space-y-4 lg:space-y-0">
                 <div className="flex items-start space-x-4">
                   <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
-                    <span className="text-white font-medium">
-                      {driver.name.split(' ').map(n => n[0]).join('')}
-                    </span>
+                    <span className="text-white font-medium">{driver.name.split(' ').map(n => n[0]).join('')}</span>
                   </div>
-                  
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-2">
                       <h3 className="text-lg font-semibold text-gray-900">{driver.name}</h3>
-                      <Badge className={getStatusColor(driver.status)}>
-                        {driver.status}
-                      </Badge>
+                      <Badge className={getStatusColor(driver.status)}>{driver.status}</Badge>
                     </div>
-                    
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm text-gray-600">
-                      <div className="flex items-center space-x-2">
-                        <Phone className="w-4 h-4" />
-                        <span>{driver.phone}</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Mail className="w-4 h-4" />
-                        <span>{driver.email}</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <MapPin className="w-4 h-4" />
-                        <span>{driver.cluster} Cluster</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Car className="w-4 h-4" />
-                        <span>{driver.vehicle}</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Calendar className="w-4 h-4" />
-                        <span>Joined {driver.joinDate}</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Clock className="w-4 h-4" />
-                        <span>{driver.totalRides} rides</span>
-                      </div>
+                      <div className="flex items-center space-x-2"><Phone className="w-4 h-4" /><span>{driver.phone}</span></div>
+                      <div className="flex items-center space-x-2"><Mail className="w-4 h-4" /><span>{driver.email}</span></div>
+                      <div className="flex items-center space-x-2"><MapPin className="w-4 h-4" /><span>{driver.cluster} Cluster</span></div>
+                      <div className="flex items-center space-x-2"><Car className="w-4 h-4" /><span>{driver.vehicle}</span></div>
+                      <div className="flex items-center space-x-2"><Calendar className="w-4 h-4" /><span>Joined {driver.joinDate}</span></div>
+                      <div className="flex items-center space-x-2"><Clock className="w-4 h-4" /><span>{driver.totalRides} rides</span></div>
                     </div>
-                    
                     <div className="mt-4">
                       <p className="text-sm font-medium text-gray-900 mb-2">Document Status</p>
                       <div className="flex flex-wrap gap-2">
                         {Object.entries(driver.documents).map(([doc, info]) => (
-                          <Badge key={doc} className={getDocumentStatusColor(info.status)}>
-                            {doc}: {info.status}
-                          </Badge>
+                          <Badge key={doc} className={getDocumentStatusColor(info.status)}>{doc}: {info.status}</Badge>
                         ))}
                       </div>
                     </div>
                   </div>
                 </div>
-                
                 <div className="flex flex-col lg:flex-row space-y-2 lg:space-y-0 lg:space-x-2">
-                  <Button variant="outline" size="sm">
-                    <Edit className="w-4 h-4 mr-2" onClick={() => openEditDialog(driver)} />
-                    Edit
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => openDocumentViewer(driver)}>
-                    <FileText className="w-4 h-4 mr-2" />
-                    Documents
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="text-red-600 hover:bg-red-50"
-                    onClick={() => handleDeleteDriver(driver.id)}
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Remove
-                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => openEditDialog(driver)}><Edit className="w-4 h-4 mr-2" />Edit</Button>
+                  <Button variant="outline" size="sm" onClick={() => openDocumentViewer(driver)}><FileText className="w-4 h-4 mr-2" />Documents</Button>
+                  <Button variant="outline" size="sm" className="text-red-600 hover:bg-red-50" onClick={() => handleDeleteDriver(driver.id)}><Trash2 className="w-4 h-4 mr-2" />Remove</Button>
                 </div>
               </div>
             </CardContent>
@@ -600,7 +408,6 @@ export default function DriversPage() {
         ))}
       </div>
       
-      {/* Document Viewer */}
       {selectedDriver && (
         <DocumentViewer
           isOpen={isDocumentViewerOpen}
