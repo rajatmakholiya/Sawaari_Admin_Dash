@@ -3,7 +3,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import DocumentAlerts from '@/components/DocumentAlerts';
 import { 
   LineChart, 
@@ -24,11 +23,9 @@ import {
   Car,
   Users,
   MapPin,
-  TrendingUp,
   Calendar,
   ArrowUpRight,
   ArrowDownRight,
-  Clock,
   Route
 } from 'lucide-react';
 
